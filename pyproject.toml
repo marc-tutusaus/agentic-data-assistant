@@ -1,0 +1,46 @@
+[project]
+name = "data-agent"
+version = "0.1.0"
+description = "Provider-agnostic AI agent that answers business questions over PostgreSQL and triggers n8n workflows"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Marc Tutusaus Vilanova" }]
+dependencies = [
+    "anthropic>=1.13,<2",
+    "openai>=3.0,<4",
+    "psycopg[binary]>=3.2",
+    "sqlglot>=30",
+    "httpx>=0.27",
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "rich>=13",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pgserver>=0.1.4", "ruff>=0.6"]
+
+[project.scripts]
+data-agent = "data_agent.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+# prompt text and test fixtures read better unwrapped
+"src/data_agent/agent/prompts.py" = ["E501"]
+"tests/*" = ["E501"]
