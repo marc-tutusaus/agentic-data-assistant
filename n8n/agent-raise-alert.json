@@ -1,0 +1,145 @@
+{
+  "id": "AgentRaiseAlert",
+  "name": "Agent tool: raise_alert (webhook → severity → email)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "agent-raise-alert",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "b611a28b-e2d6-4322-83f4-2fa8b5be13b3",
+      "name": "Webhook: agent-raise-alert",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "c2a1cead-04fc-4bcf-8a56-23ba5a33c051"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalize the alert sent by the agent and pick the subject prefix by severity\nconst a = $input.first().json.body ?? {};\nconst severity = ['info', 'warning', 'critical'].includes(a.severity) ? a.severity : 'warning';\nconst icon = { info: 'ℹ️', warning: '⚠️', critical: '🚨' }[severity];\nreturn [{ json: {\n  severity,\n  subject: `${icon} [${severity.toUpperCase()}] ${a.title || 'Alert from the data agent'}`,\n  body: a.body || '',\n}}];"
+      },
+      "id": "cd6d1c99-b5c2-49d7-896b-9c4f2a5b83c1",
+      "name": "Format alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "markdownToHtml",
+        "markdown": "={{ $json.body }}",
+        "destinationKey": "html",
+        "options": {
+          "tables": true
+        }
+      },
+      "id": "f6dee4e4-fe90-4a7e-b01a-3cfb25d7048a",
+      "name": "Markdown to HTML",
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "data-agent@example.com",
+        "toEmail": "={{ $env.REPORT_EMAIL_TO }}",
+        "subject": "={{ $('Format alert').item.json.subject }}",
+        "html": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "0db9d7e3-5eee-4af8-a454-78f55b3ec384",
+      "name": "Email on-call",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        720,
+        0
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "",
+          "name": "SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'alerted', severity: $('Format alert').item.json.severity }) }}",
+        "options": {}
+      },
+      "id": "81c86f12-8ccb-4f77-9e30-33a57d13c49e",
+      "name": "Respond: alerted",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        960,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook: agent-raise-alert": {
+      "main": [
+        [
+          {
+            "node": "Format alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format alert": {
+      "main": [
+        [
+          {
+            "node": "Markdown to HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markdown to HTML": {
+      "main": [
+        [
+          {
+            "node": "Email on-call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email on-call": {
+      "main": [
+        [
+          {
+            "node": "Respond: alerted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

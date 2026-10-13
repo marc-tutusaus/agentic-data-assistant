@@ -1,0 +1,121 @@
+{
+  "id": "AgentSendReport",
+  "name": "Agent tool: send_report (webhook → email)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "agent-send-report",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "70e9dfb3-add4-47aa-8f97-d7585ca252dd",
+      "name": "Webhook: agent-send-report",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "50a672ec-2af9-4e50-a297-2423b6961b09"
+    },
+    {
+      "parameters": {
+        "mode": "markdownToHtml",
+        "markdown": "={{ $json.body.body }}",
+        "destinationKey": "html",
+        "options": {
+          "tables": true
+        }
+      },
+      "id": "09ce7670-3070-4f7f-ab72-21100a4cdc2e",
+      "name": "Markdown to HTML",
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "data-agent@example.com",
+        "toEmail": "={{ $env.REPORT_EMAIL_TO }}",
+        "subject": "=📊 {{ $('Webhook: agent-send-report').item.json.body.title }}",
+        "html": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "22c95a6e-5b31-45ff-8cd8-c75684588b17",
+      "name": "Email report",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        480,
+        0
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "",
+          "name": "SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'sent' }) }}",
+        "options": {}
+      },
+      "id": "61ae63f0-68d1-415a-9825-3e5527c79883",
+      "name": "Respond: sent",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook: agent-send-report": {
+      "main": [
+        [
+          {
+            "node": "Markdown to HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markdown to HTML": {
+      "main": [
+        [
+          {
+            "node": "Email report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email report": {
+      "main": [
+        [
+          {
+            "node": "Respond: sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

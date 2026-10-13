@@ -1,0 +1,69 @@
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-analytics}
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      AGENT_DB_PASSWORD: ${AGENT_DB_PASSWORD:?set AGENT_DB_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # executed in alphabetical order on first start
+      - ./sql/schema/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./sql/seed/01_seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
+      - ./sql/schema/02_agent_readonly_role.sql:/docker-entrypoint-initdb.d/03_agent_role.sql:ro
+      - ./docker/init-agent-password.sh:/docker-entrypoint-initdb.d/04_agent_password.sh:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      retries: 20
+
+  api:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # the agent connects with the read-only role, never with the admin user
+      AGENT_DATABASE_URL: postgresql://agent_readonly:${AGENT_DB_PASSWORD}@postgres:5432/${POSTGRES_DB:-analytics}
+      N8N_WEBHOOK_BASE_URL: http://n8n:5678/webhook
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  # imports the workflows in ./n8n once, then exits
+  n8n-import:
+    image: docker.n8n.io/n8nio/n8n:1.110.1
+    entrypoint: ["n8n", "import:workflow", "--separate", "--input=/workflows"]
+    environment:
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?set N8N_ENCRYPTION_KEY in .env}
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n:/workflows:ro
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:1.110.1
+    restart: unless-stopped
+    environment:
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
+      GENERIC_TIMEZONE: ${GENERIC_TIMEZONE:-Europe/Madrid}
+      TZ: ${GENERIC_TIMEZONE:-Europe/Madrid}
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      AGENT_API_URL: http://api:8000
+      AGENT_API_TOKEN: ${API_TOKEN:-}
+      REPORT_EMAIL_TO: ${REPORT_EMAIL_TO:-ops-team@example.com}
+    volumes:
+      - n8n_data:/home/node/.n8n
+    depends_on:
+      n8n-import:
+        condition: service_completed_successfully
+    ports:
+      - "5678:5678"
+
+volumes:
+  pgdata:
+  n8n_data:
