@@ -96,7 +96,7 @@ FROM (VALUES
   ('Marta','Vidal','Field Support',33),
   ('Anna','Roca','Service Desk',27), ('David','Serra','Service Desk',26), ('Núria','Pons','Service Desk',28),
   ('Carlos','Martín','Service Desk',25), ('Elena','Ruiz','Service Desk',27),
-  ('Oriol','Costa','Web Development',38), ('Sara','Gil','Web Development',40), ('Marc','Riera','Web Development',36),
+  ('Oriol','Costa','Web Development',38), ('Sara','Gil','Web Development',40), ('Bernat','Riera','Web Development',36),
   ('Júlia','Mas','Marketing',31), ('Pol','Camps','Marketing',30),
   ('Irene','Font','Sales',34), ('Xavier','Bosch','Sales',35),
   ('Clara','Prat','Projects',41), ('Albert','Rius','Projects',42)

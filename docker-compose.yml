@@ -37,7 +37,7 @@ services:
 
   # imports the workflows in ./n8n once, then exits
   n8n-import:
-    image: docker.n8n.io/n8nio/n8n:1.110.1
+    image: docker.n8n.io/n8nio/n8n:2.43.5
     entrypoint: ["n8n", "import:workflow", "--separate", "--input=/workflows"]
     environment:
       N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?set N8N_ENCRYPTION_KEY in .env}
@@ -46,7 +46,7 @@ services:
       - ./n8n:/workflows:ro
 
   n8n:
-    image: docker.n8n.io/n8nio/n8n:1.110.1
+    image: docker.n8n.io/n8nio/n8n:2.43.5
     restart: unless-stopped
     environment:
       N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
